@@ -1,0 +1,279 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+"""
+PIMP, the PI Media Player.
+
+PIMP is a simple media player designed for the Raspberry Pi. 
+It works in console mode and use OMXPLAYER backend for hardware video 
+acceleration.
+
+Author: Julien Pecqueur (JPEC)
+Email:  jpec@julienpecqueur.net
+Home:   http://julienpecqueur.net
+
+This software is provided without any warranty. 
+
+If you want to improve it, modify it, correct it, please send me your 
+modifications so i'll backport them on the reference tree.
+
+Have fun.
+
+Julien
+
+"""
+
+VERSION = 0.1
+
+# Allowed movies extensions
+EXTENSIONS = ["avi", "mpg", "mp4", "mkv"]
+
+# OMXPLAYER options
+# -o : output [local|hdmi]
+# -t : enable subtitles [on|off]
+# --align : subtitles aligment [center|left|right]
+OPTIONS = '-o local -t on --align center'
+
+
+import curses
+from sys import argv
+from os import listdir
+from os import system
+from os.path import isfile
+from os.path import isdir
+from os.path import expanduser
+from os.path import basename
+
+
+def play(movie):
+    "Play a movie"
+    cmd = 'omxplayer ' + OPTIONS
+    sub = movie[0:-3] + "srt"
+    if isfile(sub):
+        cmd += ' --subtitles \"{0}\"'.format(sub)
+    cmd +=  ' \"{0}\" > .omx.log'
+    system(cmd.format(movie))
+    return(movie)
+
+
+def scan_dir_movies_for_movies(dir_movies):
+    "Scan dir_moviesectory for movies and return a list."
+    lst_movies = list()
+    for f in listdir(dir_movies):
+        p = dir_movies+"/"+f
+        if f[0] == ".":
+            continue
+        elif isdir(p):
+            lst_movies += scan_dir_movies_for_movies(p)
+        elif isfile(p) and f[-3:] in EXTENSIONS:
+            lst_movies.append(p)
+    return(lst_movies)
+
+
+def get_movies_from_dir_movies(dir_movies):
+    "Get movies from dir_moviesectories and return a dictionary."
+    dic_movies = dict()
+    if isdir(dir_movies):
+        lst_paths = scan_dir_movies_for_movies(dir_movies)
+        if not lst_paths:
+            return(False)
+        for p in lst_paths:
+            dic_movies[basename(p)] = p
+        return(dic_movies)
+
+
+def get_movies_from_db(db):
+    "Read db and return a dictionary."
+    if isfile(db):
+        f = open(db, "r")
+        dic_movies = dict()
+        for l in f.readlines():
+            l = l.replace("\n", "")
+            dic_movies[basename(l)] = l
+        f.close()
+        return(dic_movies)
+    else:
+        return(None)
+
+
+def save_movies_to_db(db, dic_movies):
+    "Save movies to db."
+    f = open(db, "w")
+    for e in dic_movies:
+        f.write(dic_movies[e]+"\n")
+    f.close()
+    return(True)
+
+
+class PIMP(object):
+
+    def __init__(self, stdscr):
+        "Initialization."
+        self.stdscr = stdscr
+        self.status = "Hi guys! What's up? ;-)"
+        self.db = expanduser("~/.movies.db")
+        self.parse_args()
+        self.init_curses()
+        self.reload_database()
+        self.get_key_do_action()
+
+
+    def parse_args(self):
+        "Parse command line parameters."
+        self.dir_movies = expanduser("~/movies")
+        for a in argv:
+            if isdir(a):
+                self.dir_movies = a
+
+
+    def init_curses(self):
+        "Init curses settings."
+        curses.curs_set(0)
+        curses.use_default_colors()
+        curses.init_pair(1, curses.COLOR_RED, -1)
+        y,x = self.stdscr.getmaxyx()
+        self.H = y
+        self.W = x
+
+
+    def reload_database(self, force=None):
+        "Reload database (if force, rescan directories)."
+        self.init_cursor()
+        self.draw_status("Loading library... Please wait!", True)
+        self.load_dic_movies(force)
+        self.load_lst_movies()
+        self.draw_status("Library reloaded.", True)
+        self.draw_window()
+
+
+    def init_cursor(self):
+        "Init cursor settings."
+        self.cursor = dict()
+        self.cursor['current'] = 0
+        self.cursor['first'] = 0
+        self.cursor['show'] = self.H - 2
+
+
+    def load_dic_movies(self, force=False):
+        "Load dic_movies."
+        self.dic_movies = get_movies_from_db(self.db)
+        if not self.dic_movies  or force:
+            self.dic_movies = get_movies_from_dir_movies(self.dir_movies)
+            save_movies_to_db(self.db, self.dic_movies)
+
+
+    def load_lst_movies(self):
+        "Load lst_movies."
+        self.lst_movies = list()
+        for movie in self.dic_movies:
+            self.lst_movies.append(movie)
+        self.lst_movies.sort()
+
+
+    def draw_window(self):
+        "Draw window."
+        # Cusor of movies to display (first/last)
+        first = self.cursor['first']
+        last = self.cursor['first'] + self.cursor['show']
+        lst_movies = self.lst_movies[first:last]
+        # Title of window
+        options = " - P:Play R:Refresh K:Up L:Down J:PUp M:PDown Q:Quit"
+        title = "PiMP V" + str(VERSION) + options
+        self.draw_line_of_text(0, title, curses.A_REVERSE)
+        # List of movies
+        i = 1
+        for movie in lst_movies:
+            if movie == self.get_current_movie():
+                self.draw_line_of_text(i, "> "+movie, curses.color_pair(1))
+            else:
+                self.draw_line_of_text(i, "  "+movie, None)
+            i += 1
+        # Status
+        self.draw_status(self.status)
+        self.stdscr.refresh()
+
+
+    def draw_status(self, text, force=False):
+        "Draw the status line"
+        self.status = text
+        self.draw_line_of_text(self.H-1, "> " + text, curses.A_REVERSE)
+        if force:
+            self.stdscr.refresh()
+
+
+    def draw_line_of_text(self, pos, text, color):
+        "Draw a line of text on the window."
+        text = text[0:self.W-1]
+        if color:
+            text = text.ljust(self.W-1, " ")
+            self.stdscr.addstr(pos, 0, text, color)
+        else:
+            self.stdscr.addstr(pos, 0, text)
+        self.stdscr.clrtoeol()
+
+
+    def get_current_movie(self):
+        "Return the selected movie."
+        return(self.lst_movies[self.cursor['current']])
+
+
+    def scroll_up(self, nb_lines):
+        "Scroll up the list of movies."
+        if self.cursor['current'] > 0:
+            self.cursor['current'] -= nb_lines
+        if self.cursor['current'] < self.cursor['first']:
+            self.cursor['first'] -= nb_lines
+
+
+    def scroll_down(self, nb_lines):
+        "Scroll down the list of movies."
+        if self.cursor['current'] < len(self.lst_movies) - 1:
+            self.cursor['current'] += nb_lines
+        if self.cursor['current'] >= self.cursor['show'] + self.cursor['first']:
+            self.cursor['first'] += nb_lines
+
+
+    def play_selected_movie(self):
+        "Play selected movie."
+        movie = None
+        movie = self.dic_movies[self.lst_movies[self.cursor['current']]]
+        if movie:
+            self.stdscr.clear()
+            self.stdscr.refresh()
+            res = play(movie)
+            self.draw_status("End of movie ({0}).".format(res), True)
+        else:
+            self.draw_status("Oops! Cannot play selected movie.", True)
+
+    def get_key_do_action(self):
+        "Event loop."
+        while True:
+            ch = self.stdscr.getch()
+ 
+            if ch == curses.KEY_UP or ch == ord('k') or ch == ord('K'):
+                self.scroll_up(1)
+
+            elif ch == curses.KEY_DOWN or ch == ord('l') or ch == ord('L'):
+                self.scroll_down(1)
+
+            elif ch == curses.KEY_NPAGE or ch == ord('m') or ch == ord('M'):
+                self.scroll_down(self.H-2)
+
+            elif ch == curses.KEY_PPAGE or ch == ord('j') or ch == ord('J'):
+                self.scroll_up(self.H-2)   
+
+            elif ch == ord('p') or ch == ord('P'):
+                self.play_selected_movie()
+
+            elif ch == ord('r') or ch == ord('R'):
+                self.reload_database(True)
+
+            elif ch == ord('Q'):
+                break
+
+            self.draw_window()
+
+
+# MAIN PROGRAM 
+if __name__ == '__main__':
+    app = curses.wrapper(PIMP)
+# END MAIN PROGRAM 
