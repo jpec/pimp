@@ -7,9 +7,10 @@ PIMP is a simple media player designed for the Raspberry Pi.
 It works in console mode and use OMXPLAYER backend for hardware video 
 acceleration.
 
-Author: Julien Pecqueur (JPEC)
-Email:  jpec@julienpecqueur.net
-Home:   http://julienpecqueur.net
+Author:  Julien Pecqueur (JPEC)
+Email:   jpec@julienpecqueur.net
+Home:    http://julienpecqueur.net
+Sources: https://github.com/jpec/pimp
 
 This software is provided without any warranty. 
 
@@ -22,7 +23,7 @@ Julien
 
 """
 
-VERSION = 0.1
+VERSION = 0.2
 
 # Allowed movies extensions
 EXTENSIONS = ["avi", "mpg", "mp4", "mkv"]
@@ -46,12 +47,13 @@ from os.path import basename
 
 def play(movie):
     "Play a movie"
-    cmd = 'omxplayer ' + OPTIONS
+    cmd = 'omxplayer {0} \"{1}\" > .omx.log'
     sub = movie[0:-3] + "srt"
     if isfile(sub):
-        cmd += ' --subtitles \"{0}\"'.format(sub)
-    cmd +=  ' \"{0}\" > .omx.log'
-    system(cmd.format(movie))
+        options = OPTIONS + ' --subtitles \"{0}\"'.format(sub)
+    else:
+        options = OPTIONS
+    system(cmd.format(options, movie))
     return(movie)
 
 
