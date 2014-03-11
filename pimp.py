@@ -1,15 +1,15 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 """
-PIMP, the PI Media Player.
+PiMP, the PI Media Player.
 
-PIMP is a simple media player designed for the Raspberry Pi. 
+PiMP is a simple media player designed for the Raspberry Pi. 
 It works in console mode and use OMXPLAYER backend for hardware video 
 acceleration.
 
 Author:  Julien Pecqueur (JPEC)
 Email:   jpec@julienpecqueur.net
-Home:    http://julienpecqueur.net
+Home:    http://raspyplayer.org
 Sources: https://github.com/jpec/pimp
 
 This software is provided without any warranty. 
@@ -23,7 +23,7 @@ Julien
 
 """
 
-VERSION = 0.2
+VERSION = 0.3
 
 # Allowed movies extensions
 EXTENSIONS = ["avi", "mpg", "mp4", "mkv"]
@@ -58,7 +58,7 @@ def play(movie):
 
 
 def scan_dir_movies_for_movies(dir_movies):
-    "Scan dir_moviesectory for movies and return a list."
+    "Scan dir_movies directory for movies and return a list."
     lst_movies = list()
     for f in listdir(dir_movies):
         p = dir_movies+"/"+f
@@ -72,7 +72,7 @@ def scan_dir_movies_for_movies(dir_movies):
 
 
 def get_movies_from_dir_movies(dir_movies):
-    "Get movies from dir_moviesectories and return a dictionary."
+    "Get movies from dir_movies directories and return a dictionary."
     dic_movies = dict()
     if isdir(dir_movies):
         lst_paths = scan_dir_movies_for_movies(dir_movies)
@@ -106,7 +106,7 @@ def save_movies_to_db(db, dic_movies):
     return(True)
 
 
-class PIMP(object):
+class PiMP(object):
 
     def __init__(self, stdscr):
         "Initialization."
@@ -246,27 +246,28 @@ class PIMP(object):
         else:
             self.draw_status("Oops! Cannot play selected movie.", True)
 
+
     def get_key_do_action(self):
         "Event loop."
         while True:
             ch = self.stdscr.getch()
  
-            if ch == curses.KEY_UP or ch == ord('k') or ch == ord('K'):
+            if ch == curses.KEY_UP or ch == ord('k'):
                 self.scroll_up(1)
 
-            elif ch == curses.KEY_DOWN or ch == ord('l') or ch == ord('L'):
+            elif ch == curses.KEY_DOWN or ch == ord('l'):
                 self.scroll_down(1)
 
-            elif ch == curses.KEY_NPAGE or ch == ord('m') or ch == ord('M'):
+            elif ch == curses.KEY_NPAGE or ch == ord('m'):
                 self.scroll_down(self.H-2)
 
-            elif ch == curses.KEY_PPAGE or ch == ord('j') or ch == ord('J'):
+            elif ch == curses.KEY_PPAGE or ch == ord('j'):
                 self.scroll_up(self.H-2)   
 
-            elif ch == ord('p') or ch == ord('P'):
+            elif ch == ord('p'):
                 self.play_selected_movie()
 
-            elif ch == ord('r') or ch == ord('R'):
+            elif ch == ord('r'):
                 self.reload_database(True)
 
             elif ch == ord('Q'):
@@ -277,5 +278,5 @@ class PIMP(object):
 
 # MAIN PROGRAM 
 if __name__ == '__main__':
-    app = curses.wrapper(PIMP)
+    app = curses.wrapper(PiMP)
 # END MAIN PROGRAM 
