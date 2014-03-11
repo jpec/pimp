@@ -34,6 +34,14 @@ EXTENSIONS = ["avi", "mpg", "mp4", "mkv"]
 # --align : subtitles aligment [center|left|right]
 OPTIONS = '-o local -t on --align center'
 
+K_NEXT="l"
+K_PREV="k"
+K_NPAG="j"
+K_PPAG="m"
+K_PLAY="p"
+K_SCAN="R"
+K_QUIT="Q"
+
 
 import curses
 from sys import argv
@@ -178,7 +186,9 @@ class PiMP(object):
         last = self.cursor['first'] + self.cursor['show']
         lst_movies = self.lst_movies[first:last]
         # Title of window
-        options = " - P:Play R:Refresh K:Up L:Down J:PUp M:PDown Q:Quit"
+        options = " - " + K_PLAY + ":Play " + K_SCAN + ":Refresh "
+        options += K_PREV + ":Up " + K_NEXT + ":Down " + K_PPAG 
+        options += ":PUp " + K_NPAG + ":PDown " + K_QUIT + ":Quit"
         title = "PiMP V" + str(VERSION) + options
         self.draw_line_of_text(0, title, curses.A_REVERSE)
         # List of movies
@@ -252,25 +262,25 @@ class PiMP(object):
         while True:
             ch = self.stdscr.getch()
  
-            if ch == curses.KEY_UP or ch == ord('k'):
+            if ch == curses.KEY_UP or ch == ord(K_PREV):
                 self.scroll_up(1)
 
-            elif ch == curses.KEY_DOWN or ch == ord('l'):
+            elif ch == curses.KEY_DOWN or ch == ord(K_NEXT):
                 self.scroll_down(1)
 
-            elif ch == curses.KEY_NPAGE or ch == ord('m'):
+            elif ch == curses.KEY_NPAGE or ch == ord(K_NPAG):
                 self.scroll_down(self.H-2)
 
-            elif ch == curses.KEY_PPAGE or ch == ord('j'):
+            elif ch == curses.KEY_PPAGE or ch == ord(K_PPAG):
                 self.scroll_up(self.H-2)   
 
-            elif ch == ord('p'):
+            elif ch == ord(K_PLAY):
                 self.play_selected_movie()
 
-            elif ch == ord('r'):
+            elif ch == ord(K_SCAN):
                 self.reload_database(True)
 
-            elif ch == ord('Q'):
+            elif ch == ord(K_QUIT):
                 break
 
             self.draw_window()
