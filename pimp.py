@@ -36,8 +36,8 @@ OPTIONS = '-o local -t on --align center'
 
 K_NEXT="l"
 K_PREV="k"
-K_NPAG="j"
-K_PPAG="m"
+K_NPAG="m"
+K_PPAG="j"
 K_PLAY="p"
 K_SCAN="R"
 K_QUIT="Q"
