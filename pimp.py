@@ -41,7 +41,7 @@ K_PPAG="j"
 K_PLAY="p"
 K_SCAN="R"
 K_QUIT="Q"
-
+K_FIND="f"
 
 import curses
 from sys import argv
@@ -188,7 +188,8 @@ class PiMP(object):
         # Title of window
         options = " - " + K_PLAY + ":Play " + K_SCAN + ":Refresh "
         options += K_PREV + ":Up " + K_NEXT + ":Down " + K_PPAG 
-        options += ":PUp " + K_NPAG + ":PDown " + K_QUIT + ":Quit"
+        options += ":PUp " + K_NPAG + ":PDown " + K_FIND + ":Find "
+        options += K_QUIT + ":Quit"
         title = "PiMP V" + str(VERSION) + options
         self.draw_line_of_text(0, title, curses.A_REVERSE)
         # List of movies
@@ -257,6 +258,10 @@ class PiMP(object):
             self.draw_status("Oops! Cannot play selected movie.", True)
 
 
+    def search_and_find(self):
+        "Search a movie and scroll to it"
+
+
     def get_key_do_action(self):
         "Event loop."
         while True:
@@ -282,7 +287,8 @@ class PiMP(object):
 
             elif ch == ord(K_QUIT):
                 break
-
+            elif ch == ord(K_FIND):
+                self.search_and_find()
             self.draw_window()
 
 
