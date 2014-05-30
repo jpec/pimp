@@ -277,15 +277,15 @@ class PiMP(object):
         offset = 0
         find = False
         for movie in self.lst_movies:
-            if movie[0] == ch:
+            if movie[0].upper() == ch.upper():
                 find = True
                 break
             offset += 1
         # scroll to offset
         if find and self.scroll_to(offset):
-            self.draw_status("Scrolled to movies starting with '{0}'.".format(), True)
+            self.draw_status("Scrolled to movies starting with '{0}'.".format(ch), True)
         else:
-            self.draw_status("Oops! No movies starts with '{0}'.".format(), True)
+            self.draw_status("Oops! No movies starts with '{0}'.".format(ch), True)
 
 
     def get_key_do_action(self):
