@@ -229,6 +229,16 @@ class PiMP(object):
         return(self.lst_movies[self.cursor['current']])
 
 
+    def scroll_to(self, offset):
+        "Scroll to offset."
+        if offset <= len(self.list_movies):
+            self.cursor['current'] = offset
+            self.cursor['first'] = offset
+            return(True)
+        else:
+            return(False)
+
+
     def scroll_up(self, nb_lines):
         "Scroll up the list of movies."
         if self.cursor['current'] > 0:
@@ -258,8 +268,24 @@ class PiMP(object):
             self.draw_status("Oops! Cannot play selected movie.", True)
 
 
-    def search_and_find(self):
+    def find_and_scroll(self):
         "Search a movie and scroll to it"
+        self.draw_status("Please enter the first letter of the movie.", True)
+        # get the first letter to find
+        ch = self.stdscr.getch()
+        # find the first movie begining with this letter
+        offset = 0
+        find = False
+        for movie in self.lst_movies:
+            if movie[0] == ch:
+                find = True
+                break
+            offset += 1
+        # scroll to offset
+        if find and self.scroll_to(offset):
+            self.draw_status("Scrolled to movies starting with '{0}'.".format(), True)
+        else:
+            self.draw_status("Oops! No movies starts with '{0}'.".format(), True)
 
 
     def get_key_do_action(self):
@@ -288,7 +314,7 @@ class PiMP(object):
             elif ch == ord(K_QUIT):
                 break
             elif ch == ord(K_FIND):
-                self.search_and_find()
+                self.find_and_scroll()
             self.draw_window()
 
 
