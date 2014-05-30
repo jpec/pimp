@@ -272,7 +272,7 @@ class PiMP(object):
         "Search a movie and scroll to it"
         self.draw_status("Please enter the first letter of the movie.", True)
         # get the first letter to find
-        ch = self.stdscr.getch()
+        ch = chr(self.stdscr.getch())
         # find the first movie begining with this letter
         offset = 0
         find = False
@@ -292,25 +292,18 @@ class PiMP(object):
         "Event loop."
         while True:
             ch = self.stdscr.getch()
- 
             if ch == curses.KEY_UP or ch == ord(K_PREV):
                 self.scroll_up(1)
-
             elif ch == curses.KEY_DOWN or ch == ord(K_NEXT):
                 self.scroll_down(1)
-
             elif ch == curses.KEY_NPAGE or ch == ord(K_NPAG):
                 self.scroll_down(self.H-2)
-
             elif ch == curses.KEY_PPAGE or ch == ord(K_PPAG):
                 self.scroll_up(self.H-2)   
-
             elif ch == ord(K_PLAY):
                 self.play_selected_movie()
-
             elif ch == ord(K_SCAN):
                 self.reload_database(True)
-
             elif ch == ord(K_QUIT):
                 break
             elif ch == ord(K_FIND):
