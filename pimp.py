@@ -277,7 +277,7 @@ class PiMP(object):
         offset = 0
         find = False
         for movie in self.lst_movies:
-            if movie[0].upper() == ch.upper():
+            if str(movie[0]).upper() == str(ch).upper():
                 find = True
                 break
             offset += 1
