@@ -23,7 +23,7 @@ Julien
 
 """
 
-VERSION = 0.3
+VERSION = 0.4
 
 # Allowed movies extensions
 EXTENSIONS = ["avi", "mpg", "mp4", "mkv"]
