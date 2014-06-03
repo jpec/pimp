@@ -34,10 +34,10 @@ EXTENSIONS = ["avi", "mpg", "mp4", "mkv"]
 # --align : subtitles aligment [center|left|right]
 OPTIONS = '-o local -t on --align center'
 
-K_NEXT="l"
-K_PREV="k"
-K_NPAG="m"
-K_PPAG="j"
+K_NEXT="k"
+K_PREV="i"
+K_NPAG="h"
+K_PPAG="y"
 K_PLAY="p"
 K_SCAN="R"
 K_QUIT="Q"
