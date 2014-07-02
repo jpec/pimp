@@ -46,7 +46,7 @@ K_FIND="f"
 import curses
 from sys import argv
 from os import listdir
-from os import system
+from subprocess import call
 from os.path import isfile
 from os.path import isdir
 from os.path import expanduser
@@ -61,7 +61,7 @@ def play(movie):
         options = OPTIONS + ' --subtitles \"{0}\"'.format(sub)
     else:
         options = OPTIONS
-    system(cmd.format(options, movie))
+    call(cmd.format(options, movie), shell=True)
     return(movie)
 
 
