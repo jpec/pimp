@@ -90,9 +90,9 @@ def scan_dir_movies_for_movies(dir_movies):
 def get_movies_from_dir_movies(dir_movies):
     "Get movies from dir_movies directories and return a dictionary."
     dic_movies = dict()
-    for cur_dir in dir_movies:
-        if isdir(car_dir):
-            lst_paths = scan_dir_movies_for_movies(cur_dir)
+    for d in dir_movies:
+        if isdir(d):
+            lst_paths = scan_dir_movies_for_movies(d)
             if not lst_paths:
                 return(False)
             for p in lst_paths:
