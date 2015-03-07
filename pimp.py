@@ -51,7 +51,9 @@ from os.path import basename
 def compute_args(args):
     "Compute command line"
     cmd = ""
-    for a in args:
+    if len(args) == 1:
+        return("")
+    for a in args[1:]:
         cmd = cmd + a + " "
     return(cmd)
 
@@ -69,6 +71,7 @@ def play(movie, args):
     subtitle = get_subtitle_if_exists(movie)
     options = compute_args(args)
     cmd = 'omxplayer {0}{1} \"{2}\" > .omx.log'
+    call("echo \""+cmd.format(options, subtitle, movie)+"\" > .pimp.log", shell=True)
     call(cmd.format(options, subtitle, movie), shell=True)
     return(movie)
 
@@ -94,10 +97,10 @@ def get_movies_from_dir_movies(dir_movies):
         if isdir(d):
             lst_paths = scan_dir_movies_for_movies(d)
             if not lst_paths:
-                return(False)
+                continue
             for p in lst_paths:
                 dic_movies[basename(p)] = p
-            return(dic_movies)
+    return(dic_movies)
 
 
 def get_movies_from_db(db):
