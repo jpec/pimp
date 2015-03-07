@@ -51,7 +51,9 @@ from os.path import basename
 def compute_args(args):
     "Compute command line"
     cmd = ""
-    for a in args:
+    if len(args) == 1:
+        return("")
+    for a in args[1:]:
         cmd = cmd + a + " "
     return(cmd)
 
@@ -69,6 +71,7 @@ def play(movie, args):
     subtitle = get_subtitle_if_exists(movie)
     options = compute_args(args)
     cmd = 'omxplayer {0}{1} \"{2}\" > .omx.log'
+    call("echo \""+cmd.format(options, subtitle, movie)+"\" > .pimp.log", shell=True)
     call(cmd.format(options, subtitle, movie), shell=True)
     return(movie)
 
@@ -94,10 +97,10 @@ def get_movies_from_dir_movies(dir_movies):
         if isdir(d):
             lst_paths = scan_dir_movies_for_movies(d)
             if not lst_paths:
-                return(False)
+                continue
             for p in lst_paths:
                 dic_movies[basename(p)] = p
-            return(dic_movies)
+    return(dic_movies)
 
 
 def get_movies_from_db(db):
@@ -154,6 +157,9 @@ class PiMP(object):
         curses.curs_set(0)
         curses.use_default_colors()
         curses.init_pair(1, curses.COLOR_RED, -1)
+        curses.init_pair(2, curses.COLOR_GREEN, -1)
+        curses.init_pair(3, curses.COLOR_BLACK, curses.COLOR_RED)
+        curses.init_pair(4, curses.COLOR_BLACK, curses.COLOR_GREEN)
         y,x = self.stdscr.getmaxyx()
         self.H = y
         self.W = x
@@ -200,14 +206,14 @@ class PiMP(object):
         options += ":PUp " + K_NPAG + ":PDown " + K_FIND + ":Find "
         options += K_QUIT + ":Quit"
         title = "PiMP V" + str(VERSION) + options
-        self.draw_line_of_text(0, title, curses.A_REVERSE)
+        self.draw_line_of_text(0, title, curses.color_pair(4))
         # List of movies
         i = 1
         for movie in lst_movies:
             if movie == self.get_current_movie():
-                self.draw_line_of_text(i, "> "+movie, curses.color_pair(1))
+                self.draw_line_of_text(i, "> "+movie, curses.color_pair(2))
             else:
-                self.draw_line_of_text(i, "  "+movie, None)
+                self.draw_line_of_text(i, "  "+movie)
             i += 1
         # Status
         self.draw_status(self.status)
@@ -216,11 +222,11 @@ class PiMP(object):
     def draw_status(self, text, force=False):
         "Draw the status line"
         self.status = text
-        self.draw_line_of_text(self.H-1, "# " + text, curses.A_REVERSE)
+        self.draw_line_of_text(self.H-1, "? " + text, curses.color_pair(4))
         if force:
             self.stdscr.refresh()
 
-    def draw_line_of_text(self, pos, text, color):
+    def draw_line_of_text(self, pos, text, color=None):
         "Draw a line of text on the window."
         text = text[0:self.W-1]
         if color:
