@@ -5,7 +5,8 @@ PiMP, the PI Media Player.
 
 PiMP is a simple media player designed for the Raspberry Pi. 
 It works in console mode and use OMXPLAYER backend for hardware video 
-acceleration.
+acceleration. Since the 0.6 version, it's possible to choose another
+backend.
 
 Author:  Julien Pecqueur
 Email:   julien@peclu.net
@@ -22,7 +23,7 @@ Have fun.
 Julien
 
 """
-VERSION = 0.5
+VERSION = 0.6
 
 # Allowed movies extensions
 EXTENSIONS = ["avi", "mpg", "mp4", "mkv"]
@@ -66,14 +67,16 @@ def get_subtitle_if_exists(movie):
     return("")
 
 
-def play(movie, args):
+def play(movie, player="omxplayer", args=[]):
     "Play a movie"
-    subtitle = get_subtitle_if_exists(movie)
+    if player == "omxplayer":
+    	subtitles = get_subtitle_if_exists(movie)
+    else:
+        subtitles = ""
     options = compute_args(args)
-    cmd = 'omxplayer {0}{1} \"{2}\" > .omx.log'
-    call("echo \""+cmd.format(options, subtitle, movie)+"\" > .pimp.log", shell=True)
-    call(cmd.format(options, subtitle, movie), shell=True)
-    return(movie)
+    cmd = '{0} {1}{2} \"{3}\" > /dev/null'.format(player, options, subtitles, movie)
+    call(cmd, shell=True)
+    return(cmd)
 
 
 def scan_dir_movies_for_movies(dir_movies):
@@ -91,7 +94,7 @@ def scan_dir_movies_for_movies(dir_movies):
 
 
 def get_movies_from_dir_movies(dir_movies):
-    "Get movies from dir_movies directories and return a dictionary."
+    "Get movies from dimovier_movies directories and return a dictionary."
     dic_movies = dict()
     for d in dir_movies:
         if isdir(d):
@@ -131,26 +134,34 @@ class PiMP(object):
     def __init__(self, stdscr):
         "Initialization."
         self.stdscr = stdscr
-        self.status = "Hi guys! What's up? ;-)"
+        self.status = "Ready."
+        self.player = "omxplayer"
         self.db = expanduser("~/.pimp")
-        self.parse_args()
-        self.init_curses()
-        self.reload_database()
-        self.get_key_do_action()
+        if self.parse_args():
+            self.init_curses()
+            self.reload_database()
+            self.get_key_do_action()
+        else:
+            print("Usage: pimp [options] <dir1> <dir2> ...")
 
     def parse_args(self):
         "Parse command line parameters."
         self.dir_movies = list()
         self.omx_args = list()
         for a in argv:
-            if isdir(a):
+            if len(a) > 9 and a[:9] == "--player=":
+            	self.player = a[9:]
+            elif a == "-h" or a == "--help":
+                return(False)
+            elif isdir(a):
                 self.dir_movies.append(a)
             else:
                 self.omx_args.append(a)
         if len(self.dir_movies) == 0:
             self.dir_movies.append(expanduser("~/movies"))
         if len(self.omx_args) == 0:
-            self.omx_args = ["-o", "both", "-t", "on", "--align", "center"]    
+            self.omx_args = ["-o", "both", "-t", "on", "--align", "center"]
+        return(True)
 
     def init_curses(self):
         "Init curses settings."
@@ -222,7 +233,7 @@ class PiMP(object):
     def draw_status(self, text, force=False):
         "Draw the status line"
         self.status = text
-        self.draw_line_of_text(self.H-1, "? " + text, curses.color_pair(4))
+        self.draw_line_of_text(self.H-1, text[0:self.W-1], curses.color_pair(4))
         if force:
             self.stdscr.refresh()
 
@@ -270,7 +281,7 @@ class PiMP(object):
         if movie:
             self.stdscr.clear()
             self.stdscr.refresh()
-            res = play(movie, self.omx_args)
+            res = play(movie, player=self.player, args=self.omx_args)
             self.draw_status("End of movie ({0}).".format(res), True)
         else:
             self.draw_status("Oops! Cannot play selected movie.", True)
