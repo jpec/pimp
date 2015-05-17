@@ -282,7 +282,7 @@ class PiMP(object):
             self.stdscr.clear()
             self.stdscr.refresh()
             res = play(movie, player=self.player, args=self.omx_args)
-            self.draw_status("End of movie ({0}).".format(res), True)
+            self.draw_status("{0}".format(res), True)
         else:
             self.draw_status("Oops! Cannot play selected movie.", True)
 
