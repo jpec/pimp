@@ -244,7 +244,7 @@ class PiMP(object):
     def clear_list_widget(self, start, end, width):
         "Clear the movies list widget."
         i = start
-        while i < end:
+        while i <= end:
             self.draw_line_of_text(i, " ".ljust(width))
             i += 1
             
@@ -326,11 +326,11 @@ class PiMP(object):
                     find = True
                     break
                 offset += 1
-                # scroll to offset
-                if find and self.scroll_to(offset):
-                    self.draw_status("Scrolled to movies starting with '{0}'.".format(ch), True)
-                else:
-                    self.draw_status("Oops! No movies starts with '{0}'.".format(ch), True)
+            # scroll to offset
+            if find and self.scroll_to(offset):
+                self.draw_status("Scrolled to movies starting with '{0}'.".format(ch), True)
+            else:
+                self.draw_status("Oops! No movies starts with '{0}'.".format(ch), True)
         else:
             self.draw_status("Oops! You didn't type a letter looser.")
             
