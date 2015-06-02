@@ -23,7 +23,7 @@ Have fun.
 Julien
 
 """
-VERSION = 0.6
+VERSION = 0.7
 
 # Allowed movies extensions
 EXTENSIONS = ["avi", "mpg", "mp4", "mkv"]
@@ -75,8 +75,8 @@ def play(movie, player="omxplayer", args=[]):
         subtitles = ""
     options = compute_args(args)
     cmd = '{0} {1}{2} \"{3}\" > /dev/null'.format(player, options, subtitles, movie)
-    call(cmd, shell=True)
-    return(cmd)
+    r = call(cmd, shell=True)
+    return(r)
 
 
 def scan_dir_movies_for_movies(dir_movies):
@@ -129,39 +129,49 @@ def save_movies_to_db(db, dic_movies):
     return(True)
 
 
+def parse_args(test=False):
+    "Parse command line parameters."
+    dir_movies = list()
+    omx_args = list()
+    player = "omxplayer"
+    for a in argv:
+        if (a == "-h" or a == "--help") and test:
+            print("Usage: pimp [options]")
+            print("Options:")
+            print("--player=<player executable> to specify a player")
+            print("any directories containing movies")
+            print("omxplayers's options for the default player")
+            return(False)
+        if len(a) > 9 and a[:9] == "--player=":
+            player = a[9:]
+        elif isdir(a):
+            dir_movies.append(a)
+        else:
+            omx_args.append(a)
+    if test:
+        return(True)
+    else:
+        if len(dir_movies) == 0:
+            dir_movies.append(expanduser("~/movies"))
+        if len(omx_args) == 0:
+            omx_args = ["-o", "both", "-t", "on", "--align", "center"]
+        return(dir_movies, omx_args, player)
+
+
 class PiMP(object):
 
     def __init__(self, stdscr):
         "Initialization."
         self.stdscr = stdscr
         self.status = "Ready."
-        self.player = "omxplayer"
+        dir_movies, omx_args, player = parse_args()
+        self.player = player
+        self.omx_args = omx_args
+        self.dir_movies = dir_movies
         self.db = expanduser("~/.pimp")
-        if self.parse_args():
-            self.init_curses()
-            self.reload_database()
-            self.get_key_do_action()
-        else:
-            print("Usage: pimp [options] <dir1> <dir2> ...")
-
-    def parse_args(self):
-        "Parse command line parameters."
-        self.dir_movies = list()
-        self.omx_args = list()
-        for a in argv:
-            if len(a) > 9 and a[:9] == "--player=":
-            	self.player = a[9:]
-            elif a == "-h" or a == "--help":
-                return(False)
-            elif isdir(a):
-                self.dir_movies.append(a)
-            else:
-                self.omx_args.append(a)
-        if len(self.dir_movies) == 0:
-            self.dir_movies.append(expanduser("~/movies"))
-        if len(self.omx_args) == 0:
-            self.omx_args = ["-o", "both", "-t", "on", "--align", "center"]
-        return(True)
+        self.init_curses()
+        self.reload_database()
+        self.get_key_do_action()
 
     def init_curses(self):
         "Init curses settings."
@@ -219,6 +229,7 @@ class PiMP(object):
         title = "PiMP V" + str(VERSION) + options
         self.draw_line_of_text(0, title, curses.color_pair(4))
         # List of movies
+        self.clear_list_widget(1, self.H-2, self.W-1)
         i = 1
         for movie in lst_movies:
             if movie == self.get_current_movie():
@@ -230,6 +241,13 @@ class PiMP(object):
         self.draw_status(self.status)
         self.stdscr.refresh()
 
+    def clear_list_widget(self, start, end, width):
+        "Clear the movies list widget."
+        i = start
+        while i < end:
+            self.draw_line_of_text(i, " ".ljust(width))
+            i += 1
+            
     def draw_status(self, text, force=False):
         "Draw the status line"
         self.status = text
@@ -255,22 +273,27 @@ class PiMP(object):
         "Scroll to offset."
         if offset <= len(self.lst_movies):
             self.cursor['current'] = offset
-            self.cursor['first'] = offset
-            return(True)
         else:
             return(False)
+        if self.cursor['current'] >= len(self.lst_movies) - self.cursor['show']:
+            self.cursor['first'] = len(self.lst_movies) - self.cursor['show']
+        return(True)
 
     def scroll_up(self, nb_lines):
         "Scroll up the list of movies."
-        if self.cursor['current'] > 0:
+        if self.cursor['current'] >= nb_lines:
             self.cursor['current'] -= nb_lines
+        else:
+            self.cursor['current'] = 0
         if self.cursor['current'] < self.cursor['first']:
             self.cursor['first'] -= nb_lines
 
     def scroll_down(self, nb_lines):
         "Scroll down the list of movies."
-        if self.cursor['current'] < len(self.lst_movies) - 1:
+        if self.cursor['current'] < len(self.lst_movies) - nb_lines - 1:
             self.cursor['current'] += nb_lines
+        else:
+            self.cursor['current'] = len(self.lst_movies) - 1
         if self.cursor['current'] >= self.cursor['show'] + self.cursor['first']:
             self.cursor['first'] += nb_lines
 
@@ -282,7 +305,10 @@ class PiMP(object):
             self.stdscr.clear()
             self.stdscr.refresh()
             res = play(movie, player=self.player, args=self.omx_args)
-            self.draw_status("{0}".format(res), True)
+            if res:
+                self.draw_status("{0}".format(res), True)
+            else:
+                self.draw_status("Oops! Pimp's author is an idiot.")
         else:
             self.draw_status("Oops! Cannot play selected movie.", True)
 
@@ -291,20 +317,23 @@ class PiMP(object):
         self.draw_status("Please enter the first letter of the movie.", True)
         # get the first letter to find
         ch = chr(self.stdscr.getch())
-        # find the first movie begining with this letter
-        offset = 0
-        find = False
-        for movie in self.lst_movies:
-            if str(movie[0]).upper() == str(ch).upper():
-                find = True
-                break
-            offset += 1
-        # scroll to offset
-        if find and self.scroll_to(offset):
-            self.draw_status("Scrolled to movies starting with '{0}'.".format(ch), True)
+        if ch.isalpha():
+            # find the first movie begining with this letter
+            offset = 0
+            find = False
+            for movie in self.lst_movies:
+                if str(movie[0]).upper() == str(ch).upper():
+                    find = True
+                    break
+                offset += 1
+                # scroll to offset
+                if find and self.scroll_to(offset):
+                    self.draw_status("Scrolled to movies starting with '{0}'.".format(ch), True)
+                else:
+                    self.draw_status("Oops! No movies starts with '{0}'.".format(ch), True)
         else:
-            self.draw_status("Oops! No movies starts with '{0}'.".format(ch), True)
-
+            self.draw_status("Oops! You didn't type a letter looser.")
+            
     def get_key_do_action(self):
         "Event loop."
         while True:
@@ -330,5 +359,6 @@ class PiMP(object):
 
 # MAIN PROGRAM 
 if __name__ == '__main__':
-    app = curses.wrapper(PiMP)
+    if parse_args(test=True):
+        app = curses.wrapper(PiMP)
 # END MAIN PROGRAM
