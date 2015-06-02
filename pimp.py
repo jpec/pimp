@@ -271,12 +271,10 @@ class PiMP(object):
 
     def scroll_to(self, offset):
         "Scroll to offset."
-        if offset <= len(self.lst_movies):
-            self.cursor['current'] = offset
-        else:
-            return(False)
-        if self.cursor['current'] >= len(self.lst_movies) - self.cursor['show']:
-            self.cursor['first'] = len(self.lst_movies) - self.cursor['show']
+        if offset > self.cursor['current']:
+            self.scroll_down(offset - self.cursor['current'])
+        if offset < self.cursor['current']:
+            self.scroll_up(self.cursor['current'] - offset)
         return(True)
 
     def scroll_up(self, nb_lines):
