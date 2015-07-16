@@ -23,7 +23,7 @@ Have fun.
 Julien
 
 """
-VERSION = 0.7
+VERSION = 0.8
 
 # Allowed movies extensions
 EXTENSIONS = ["avi", "mpg", "mp4", "mkv"]
@@ -40,13 +40,9 @@ K_FIND="f"
 
 
 import curses
-from sys import argv
-from os import listdir
-from subprocess import call
-from os.path import isfile
-from os.path import isdir
-from os.path import expanduser
-from os.path import basename
+import sys
+import os
+import subprocess
 
 
 def compute_args(args):
@@ -62,33 +58,34 @@ def compute_args(args):
 def get_subtitle_if_exists(movie):
     "Get subtitle file"
     sub = movie[0:-3] + "srt"
-    if isfile(sub):
-        return('--subtitles \"{0}\" '.format(sub))
+    if os.path.isfile(sub):
+        return('--subtitles \"{0}\"'.format(sub))
     return("")
 
 
 def play(movie, player="omxplayer", args=[]):
     "Play a movie"
     if player == "omxplayer":
-    	subtitles = get_subtitle_if_exists(movie)
-    else:
-        subtitles = ""
+    	args.append(get_subtitle_if_exists(movie))
     options = compute_args(args)
-    cmd = '{0} {1}{2} \"{3}\" > /dev/null'.format(player, options, subtitles, movie)
-    r = call(cmd, shell=True)
-    return(r)
+    if len(options) >1:
+        cmd = '{0} {1}\"{2}\"'.format(player, options, movie)
+    else:
+        cmd = '{0} \"{1}\"'.format(player, movie)
+    r = subprocess.call(cmd + ' > /dev/null', shell=True)
+    return(cmd)
 
 
 def scan_dir_movies_for_movies(dir_movies):
     "Scan dir_movies directory for movies and return a list."
     lst_movies = list()
-    for f in listdir(dir_movies):
+    for f in os.listdir(dir_movies):
         p = dir_movies+"/"+f
         if f[0] == ".":
             continue
-        elif isdir(p):
+        elif os.path.isdir(p):
             lst_movies += scan_dir_movies_for_movies(p)
-        elif isfile(p) and f[-3:] in EXTENSIONS:
+        elif os.path.isfile(p) and f[-3:] in EXTENSIONS:
             lst_movies.append(p)
     return(lst_movies)
 
@@ -97,23 +94,23 @@ def get_movies_from_dir_movies(dir_movies):
     "Get movies from dimovier_movies directories and return a dictionary."
     dic_movies = dict()
     for d in dir_movies:
-        if isdir(d):
+        if os.path.isdir(d):
             lst_paths = scan_dir_movies_for_movies(d)
             if not lst_paths:
                 continue
             for p in lst_paths:
-                dic_movies[basename(p)] = p
+                dic_movies[os.path.basename(p)] = p
     return(dic_movies)
 
 
 def get_movies_from_db(db):
     "Read db and return a dictionary."
-    if isfile(db):
+    if os.path.isfile(db):
         f = open(db, "r")
         dic_movies = dict()
         for l in f.readlines():
             l = l.replace("\n", "")
-            dic_movies[basename(l)] = l
+            dic_movies[os.path.basename(l)] = l
         f.close()
         return(dic_movies)
     else:
@@ -134,7 +131,7 @@ def parse_args(test=False):
     dir_movies = list()
     omx_args = list()
     player = "omxplayer"
-    for a in argv:
+    for a in sys.argv:
         if (a == "-h" or a == "--help") and test:
             print("Usage: pimp [options]")
             print("Options:")
@@ -144,15 +141,15 @@ def parse_args(test=False):
             return(False)
         if len(a) > 9 and a[:9] == "--player=":
             player = a[9:]
-        elif isdir(a):
+        elif os.path.isdir(a):
             dir_movies.append(a)
         else:
-            omx_args.append(a)
+            omx_args.append(a.strip())
     if test:
         return(True)
     else:
         if len(dir_movies) == 0:
-            dir_movies.append(expanduser("~/movies"))
+            dir_movies.append(os.path.expanduser("~/movies"))
         if len(omx_args) == 0:
             omx_args = ["-o", "both", "-t", "on", "--align", "center"]
         return(dir_movies, omx_args, player)
@@ -168,7 +165,7 @@ class PiMP(object):
         self.player = player
         self.omx_args = omx_args
         self.dir_movies = dir_movies
-        self.db = expanduser("~/.pimp")
+        self.db = os.path.expanduser("~/.pimp")
         self.init_curses()
         self.reload_database()
         self.get_key_do_action()
@@ -306,7 +303,7 @@ class PiMP(object):
             if res:
                 self.draw_status("{0}".format(res), True)
             else:
-                self.draw_status("Oops! Pimp's author is an idiot.")
+                self.draw_status("Oops!")
         else:
             self.draw_status("Oops! Cannot play selected movie.", True)
 
