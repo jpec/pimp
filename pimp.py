@@ -51,6 +51,9 @@ def compute_args(args):
     if len(args) == 1:
         return("")
     for a in args[1:]:
+        a = a.strip()
+        if a == '':
+            continue
         cmd = cmd + a + " "
     return(cmd)
 
