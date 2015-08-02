@@ -69,7 +69,9 @@ def get_subtitle_if_exists(movie):
 def play(movie, player="omxplayer", args=[]):
     "Play a movie"
     if player == "omxplayer":
-    	args.append(get_subtitle_if_exists(movie))
+        sub = get_subtitle_if_exists(movie)
+        if sub != "":
+    	    args.append(sub)
     options = compute_args(args)
     if len(options) >1:
         cmd = '{0} {1}\"{2}\"'.format(player, options, movie)
