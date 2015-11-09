@@ -161,7 +161,7 @@ def parse_args(test=False):
             dir_movies.append(os.path.expanduser("~/movies"))
         if len(omx_args) == 0:
             omx_args = ["-o", "both", "-t", "on", "--align", "center"]
-        return(dir_movies, omx_args, player)
+        return(dir_movies, omx_args, player, db)
 
 
 class PiMP(object):
