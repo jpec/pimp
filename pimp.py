@@ -23,7 +23,7 @@ Have fun.
 Julien
 
 """
-VERSION = 0.8
+VERSION = 0.9
 
 # Allowed movies extensions
 EXTENSIONS = ["avi", "mpg", "mp4", "mkv"]
@@ -136,16 +136,20 @@ def parse_args(test=False):
     dir_movies = list()
     omx_args = list()
     player = "omxplayer"
+    db = os.path.expanduser("~/.pimp")
     for a in sys.argv:
         if (a == "-h" or a == "--help") and test:
             print("Usage: pimp [options]")
             print("Options:")
             print("--player=<player executable> to specify a player")
+            print("--db=<db filename> to specify a specific database")
             print("any directories containing movies")
             print("omxplayers's options for the default player")
             return(False)
         if len(a) > 9 and a[:9] == "--player=":
             player = a[9:]
+        elif len(a) > 5 and a[:5] == "--db=":
+            db = a[5:]
         elif os.path.isdir(a):
             dir_movies.append(a)
         else:
@@ -166,11 +170,11 @@ class PiMP(object):
         "Initialization."
         self.stdscr = stdscr
         self.status = "Ready."
-        dir_movies, omx_args, player = parse_args()
+        dir_movies, omx_args, player, db = parse_args()
         self.player = player
         self.omx_args = omx_args
         self.dir_movies = dir_movies
-        self.db = os.path.expanduser("~/.pimp")
+        self.db = db
         self.init_curses()
         self.reload_database()
         self.get_key_do_action()
